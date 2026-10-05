@@ -17,6 +17,7 @@ from linkedin_mcp_server.linkedin.contracts import (
     rate_limited_section_error as rate_limited_section_error,
 )
 from linkedin_mcp_server.linkedin.conversations import ConversationReader
+from linkedin_mcp_server.linkedin.engagement import PostEngagementReader
 from linkedin_mcp_server.linkedin.feed import FeedReader
 from linkedin_mcp_server.linkedin.job_pages import JobPageReader
 from linkedin_mcp_server.linkedin.jobs import JobReader
@@ -65,6 +66,7 @@ class LinkedInExtractor:
         job_pages = JobPageReader(session, navigator, content)
         self._jobs = JobReader(navigator, capture, job_pages)
         self._posts = PostSearch(capture)
+        self._engagement = PostEngagementReader(session, navigator)
         self._conversations = ConversationReader(
             session, navigator, content, profile_page
         )
@@ -224,9 +226,23 @@ class LinkedInExtractor:
             max_pages=max_pages,
         )
 
-    async def get_inbox(self, limit: int = 20) -> dict[str, Any]:
+    async def get_post_engagement(
+        self,
+        url: str,
+        *,
+        max_posts: int = 1,
+        max_people: int = 100,
+    ) -> dict[str, Any]:
+        """Read who reacted to and commented on a post, merged into people."""
+        return await self._engagement.get_post_engagement(
+            url, max_posts=max_posts, max_people=max_people
+        )
+
+    async def get_inbox(
+        self, limit: int = 20, include_thread_ids: bool = True
+    ) -> dict[str, Any]:
         """List recent conversations from the messaging inbox."""
-        return await self._conversations.get_inbox(limit)
+        return await self._conversations.get_inbox(limit, include_thread_ids)
 
     async def get_conversation(
         self,

@@ -147,6 +147,22 @@ Optional additional keys:
 - `job_ids: [id, ...]` (search_jobs and get_saved_jobs)
 - `total: {count, exact}` (search_jobs only) — the result count LinkedIn advertises on the first page; `exact` is false for a lower bound such as "500+"
 - `promoted_job_ids: [id, ...]` (search_jobs only) — the subset of `job_ids` shown as promoted; present only when every page could be read, so an empty list means none were
+- `references["post_engagement"]` (get_post_engagement only) — every entry is
+  `kind: "post_engagement"` and carries `has_liked`, `has_commented`,
+  `source_post_urls`, `comments` and `identified_by` alongside the usual
+  `url`/`text`. One entry per person, merged across the posts that were read.
+  Measured against live LinkedIn's server-driven post page (2026-10), none
+  re-derivable from the code: `/feed/update/<urn>/reactions/` is a 404, so the
+  reactor list is reachable only by activating the post link inside
+  `[data-testid^="ReactionFacepileCollection-"]` (its other links open
+  reactors' profiles in a new tab); the list is the dialog's
+  `[data-component-type="LazyColumn"]` and loads its next page only when its
+  last child comes into view; both reactor rows and comments now name people
+  by vanity slug, so people are merged on profile path, and a display name
+  joins two entries only across an opaque `/in/ACoAA...` id, in which case
+  `identified_by` reads `display_name`; a comment is
+  `[componentkey^="replaceableComment_"]` and its body is
+  `[data-testid="expandable-text-box"]`.
 - `references["feed"]` (get_feed only) — every entry is `kind: "feed_post"`; non-post anchors (sidebar profiles, employer logos) are filtered. URLs may carry either `/feed/update/<urn>/` (DOM-anchor-derived) or `/posts/<slug>` (SDUI-derived) form; both are valid LinkedIn permalinks. Cap is 50 entries, matching `get_feed`'s `num_posts` ceiling.
 - `references["search_results"]` (search_posts only) — DOM references first, then up to 50 `kind: "feed_post"` permalinks read from the page's JSON/document payload responses (`/feed/update/<urn>/` or `/posts/<slug>`, both valid). Captured permalinks are appended, not aligned to result order.
 - `apply: {type, url?}` (get_job_apply_url, which returns no `sections`) — `type` is `easy_apply`, `external`, `applied`, `closed` or `unknown`; `url` is the employer's application link as LinkedIn gives it, never opened, present for external postings

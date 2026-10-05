@@ -1053,6 +1053,31 @@ class TestGetInbox:
         assert result["url"] == MESSAGING
         assert result["sections"] == {"inbox": "Conversation A"}
 
+    async def test_without_thread_ids_the_compose_page_is_never_opened(self, mock_page):
+        """No row is clicked, so nothing is marked read."""
+        reader = _reader(mock_page)
+        nav = AsyncMock()
+        scan = AsyncMock(return_value=_scan())
+        with (
+            patch.object(PageNavigator, "_navigate_to_page", nav),
+            patch.object(reader, "_wait_for_main_text", new_callable=AsyncMock),
+            patch.object(
+                reader, "_scroll_main_scrollable_region", new_callable=AsyncMock
+            ),
+            patch.object(
+                PageContentReader,
+                "_extract_root_content",
+                new_callable=AsyncMock,
+                return_value=_root("Conversation A"),
+            ),
+            patch.object(reader, "_extract_conversation_thread_refs", scan),
+        ):
+            result = await reader.get_inbox(limit=10, include_thread_ids=False)
+
+        assert [call.args[0] for call in nav.await_args_list] == [MESSAGING]
+        scan.assert_not_awaited()
+        assert result == {"url": MESSAGING, "sections": {"inbox": "Conversation A"}}
+
     async def test_includes_conversation_thread_refs(self, mock_page):
         """Click-captured thread refs lead, anchor-derived ones follow."""
         reader = _reader(mock_page)

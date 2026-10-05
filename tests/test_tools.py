@@ -1412,7 +1412,27 @@ class TestMessagingTools:
         result = await tool_fn(mock_context)
 
         assert result["sections"]["inbox"] == "Conversation 1\nConversation 2"
-        mock_extractor.get_inbox.assert_awaited_once_with(limit=20)
+        mock_extractor.get_inbox.assert_awaited_once_with(
+            limit=20, include_thread_ids=True
+        )
+
+    async def test_get_inbox_without_thread_ids(self, mock_context, serve_extractor):
+        mock_extractor = _make_mock_extractor(
+            {"url": "https://www.linkedin.com/messaging/", "sections": {}}
+        )
+
+        from linkedin_mcp_server.tools.messaging import register_messaging_tools
+
+        mcp = FastMCP("test")
+        register_messaging_tools(mcp)
+
+        serve_extractor(mock_extractor)
+        tool_fn = await get_tool_fn(mcp, "get_inbox")
+        await tool_fn(mock_context, include_thread_ids=False)
+
+        mock_extractor.get_inbox.assert_awaited_once_with(
+            limit=20, include_thread_ids=False
+        )
 
     async def test_get_conversation_success(self, mock_context, serve_extractor):
         expected = {
@@ -2508,3 +2528,75 @@ class TestToolTimeouts:
             tool = await mcp.get_tool(name)
             assert tool is not None
             assert tool.timeout == DEFAULT_TOOL_TIMEOUT_SECONDS
+
+
+class TestPostEngagementTool:
+    async def test_passes_the_caps_through(self, mock_context, serve_extractor):
+        mock_extractor = MagicMock()
+        mock_extractor.get_post_engagement = AsyncMock(
+            return_value={
+                "url": "https://www.linkedin.com/feed/update/urn:li:activity:111/",
+                "sections": {"post_engagement": "Post: ..."},
+                "references": {"post_engagement": []},
+            }
+        )
+        from linkedin_mcp_server.tools.post import register_post_tools
+
+        mcp = FastMCP("test")
+        register_post_tools(mcp)
+        serve_extractor(mock_extractor)
+        tool_fn = await get_tool_fn(mcp, "get_post_engagement")
+        result = await tool_fn(
+            "https://www.linkedin.com/in/williamhgates/",
+            mock_context,
+            max_posts=3,
+            max_people=25,
+        )
+        mock_extractor.get_post_engagement.assert_awaited_once_with(
+            "https://www.linkedin.com/in/williamhgates/",
+            max_posts=3,
+            max_people=25,
+        )
+        assert result["sections"]["post_engagement"] == "Post: ..."
+
+    async def test_reads_one_post_unless_told_otherwise(
+        self, mock_context, serve_extractor
+    ):
+        """Each post is a page view; the default must not spend more than one."""
+        mock_extractor = MagicMock()
+        mock_extractor.get_post_engagement = AsyncMock(
+            return_value={"url": "https://www.linkedin.com/in/x/", "sections": {}}
+        )
+        from linkedin_mcp_server.tools.post import register_post_tools
+
+        mcp = FastMCP("test")
+        register_post_tools(mcp)
+        serve_extractor(mock_extractor)
+        tool_fn = await get_tool_fn(mcp, "get_post_engagement")
+        await tool_fn("https://www.linkedin.com/in/x/", mock_context)
+        await_args = mock_extractor.get_post_engagement.await_args
+        assert await_args is not None
+        assert await_args.kwargs["max_posts"] == 1
+
+    async def test_a_company_url_is_refused_with_a_usable_message(
+        self, mock_context, serve_extractor
+    ):
+        from linkedin_mcp_server.core.exceptions import InvalidReferenceError
+        from linkedin_mcp_server.tools.post import register_post_tools
+
+        mock_extractor = MagicMock()
+        mock_extractor.get_post_engagement = AsyncMock(
+            side_effect=InvalidReferenceError(
+                "/company/ is not a post or a person. A company page is not supported."
+            )
+        )
+        mcp = FastMCP("test")
+        register_post_tools(mcp)
+        serve_extractor(mock_extractor)
+        tool_fn = await get_tool_fn(mcp, "get_post_engagement")
+        with pytest.raises(Exception) as excinfo:
+            await tool_fn(
+                "https://www.linkedin.com/company/microsoft/",
+                mock_context,
+            )
+        assert "company page" in str(excinfo.value)

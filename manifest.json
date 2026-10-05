@@ -124,6 +124,10 @@
       "description": "Search LinkedIn posts/content globally by keyword (the 'Posts' tab) with an optional recency filter (past-24h/past-week/past-month); returns unordered candidate permalinks in references"
     },
     {
+      "name": "get_post_engagement",
+      "description": "List the people who reacted to and commented on a LinkedIn post, merged into one row per person, from a post permalink or a person's profile URL"
+    },
+    {
       "name": "close_session",
       "description": "Properly close browser session and clean up resources"
     }

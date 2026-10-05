@@ -1,0 +1,259 @@
+{
+  "call": {
+    "arguments": {
+      "max_people": 10,
+      "url": "https://www.linkedin.com/feed/update/urn:li:activity:7/"
+    },
+    "method": "get_post_engagement"
+  },
+  "events": [
+    {
+      "call": "get_post_engagement",
+      "callback_id": "callback-1",
+      "event": "framenavigated",
+      "kind": "listener.add",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "extra": {
+        "target_url": "https://www.linkedin.com/feed/update/urn:li:activity:7/",
+        "wait_until": "domcontentloaded"
+      },
+      "kind": "boundary.trace",
+      "label": "extractor-before-goto",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "navigate",
+      "landed_url": "https://www.linkedin.com/feed/update/urn:li:activity:7/",
+      "requested_url": "https://www.linkedin.com/feed/update/urn:li:activity:7/",
+      "section": "post",
+      "timeout_ms": 30000,
+      "wait_until": "domcontentloaded"
+    },
+    {
+      "call": "get_post_engagement",
+      "description": "goto https://www.linkedin.com/feed/update/urn:li:activity:7/",
+      "kind": "boundary.stabilize",
+      "result": null,
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "extra": {
+        "target_url": "https://www.linkedin.com/feed/update/urn:li:activity:7/",
+        "wait_until": "domcontentloaded"
+      },
+      "kind": "boundary.trace",
+      "label": "extractor-after-goto",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "boundary.auth_quick",
+      "result": null,
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "callback_id": "callback-1",
+      "event": "framenavigated",
+      "kind": "listener.remove",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "boundary.rate_limit",
+      "section": "post"
+    },
+    {
+      "arg": {
+        "minimumLength": 100
+      },
+      "call": "get_post_engagement",
+      "kind": "wait_for_function",
+      "operation": "main_text_minimum",
+      "program_digest": "9ab4343bf5cb",
+      "section": "post",
+      "timeout_ms": 10000
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "wait_for_selector",
+      "operation": "engagement_ready",
+      "section": "post",
+      "selector": "[data-testid^=\"ReactionFacepileCollection-\"], [componentkey^=\"replaceableComment_\"]",
+      "state": "visible",
+      "timeout_ms": 5000
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "evaluate",
+      "operation": "comment_rows",
+      "program_digest": "d7ba9012a14a",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.create",
+      "locator": "reaction_details",
+      "parent": null,
+      "section": "post",
+      "selector": "[data-testid^=\"ReactionFacepileCollection-\"] a[href*=\"/feed/update/\"]"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.count",
+      "locator": "reaction_details",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.create",
+      "locator": "reaction_details",
+      "parent": null,
+      "section": "post",
+      "selector": "[data-testid^=\"ReactionFacepileCollection-\"] a[href*=\"/feed/update/\"]"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.derive",
+      "locator": "reaction_details.first",
+      "operation": "first",
+      "parent": "reaction_details",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.scroll_into_view",
+      "locator": "reaction_details.first",
+      "section": "post",
+      "timeout_ms": 5000
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.click",
+      "locator": "reaction_details.first",
+      "section": "post",
+      "timeout_ms": 5000
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.create",
+      "locator": "reactor_list",
+      "parent": null,
+      "section": "post",
+      "selector": "dialog[open]:not(:has([contenteditable=\"true\"])) [data-component-type=\"LazyColumn\"]"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.derive",
+      "locator": "reactor_list.first",
+      "operation": "first",
+      "parent": "reactor_list",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "locator.wait_for",
+      "locator": "reactor_list.first",
+      "section": "post",
+      "state": "visible",
+      "timeout_ms": 5000
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "evaluate",
+      "operation": "reactor_rows",
+      "program_digest": "506e8eca54d0",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "evaluate",
+      "operation": "scroll_reactions",
+      "program_digest": "e73ed63405d3",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "sleep",
+      "reason": "sleep",
+      "seconds": 1.5,
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "evaluate",
+      "operation": "reactor_rows",
+      "program_digest": "506e8eca54d0",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "evaluate",
+      "operation": "scroll_reactions",
+      "program_digest": "e73ed63405d3",
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "sleep",
+      "reason": "sleep",
+      "seconds": 1.5,
+      "section": "post"
+    },
+    {
+      "call": "get_post_engagement",
+      "kind": "evaluate",
+      "operation": "reactor_rows",
+      "program_digest": "506e8eca54d0",
+      "section": "post"
+    }
+  ],
+  "result": {
+    "references": {
+      "post_engagement": [
+        {
+          "comments": [],
+          "context": "post engagement",
+          "has_commented": false,
+          "has_liked": true,
+          "identified_by": "profile_url",
+          "kind": "post_engagement",
+          "source_post_urls": [
+            "https://www.linkedin.com/feed/update/urn:li:activity:7/"
+          ],
+          "text": "Grace Hopper",
+          "url": "/in/ACoAAgrace"
+        },
+        {
+          "comments": [
+            "Hi"
+          ],
+          "context": "post engagement",
+          "has_commented": true,
+          "has_liked": false,
+          "identified_by": "profile_url",
+          "kind": "post_engagement",
+          "source_post_urls": [
+            "https://www.linkedin.com/feed/update/urn:li:activity:7/"
+          ],
+          "text": "Ada Lovelace",
+          "url": "/in/ada-lovelace"
+        }
+      ]
+    },
+    "section_names": [
+      "post_engagement"
+    ],
+    "sections": {
+      "post_engagement": "Post: https://www.linkedin.com/feed/update/urn:li:activity:7/\nReactions: 1 read · 1 not visible to you (out of your network)\n  Grace Hopper — /in/ACoAAgrace\nComments: 1 read\n  Ada Lovelace — /in/ada-lovelace\n    Hi"
+    },
+    "url": "https://www.linkedin.com/feed/update/urn:li:activity:7/"
+  },
+  "scenario": "get_post_engagement__baseline",
+  "schema_version": 1
+}

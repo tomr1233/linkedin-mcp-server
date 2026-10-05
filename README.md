@@ -74,6 +74,7 @@ Use code <strong>FOUNDING20</strong> for 20% off your first year <a href="https:
 | `get_job_apply_url` | Read how a posting takes applications and the employer's link. |
 | `get_feed` | Read recent home-feed posts, with links in `references`. |
 | `search_posts` | Search posts by keyword with optional recency filters; `references` contains unordered candidate post links. |
+| `get_post_engagement` | List who reacted to and commented on a post, one row per person, from a permalink or a profile URL. |
 | `close_session` | Close the active browser session and release its resources. |
 
 <br/>
@@ -202,6 +203,23 @@ uvx mcp-server-linkedin@latest --transport streamable-http --host 127.0.0.1 --po
 ```
 
 Runtime server logs are emitted by FastMCP/Uvicorn.
+
+**REST endpoint for non-MCP callers.** The HTTP transport also serves
+`POST /v1/send-message`, so an application that is not an MCP client can send a
+message without speaking JSON-RPC:
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/send-message \
+  -H "Content-Type: application/json" \
+  -d '{"linkedin_username":"someone","message":"Hi there","confirm_send":true}'
+```
+
+`confirm_send` must be present and explicitly `true` to send. Every failure
+response carries a `retry_safe` field; when it is `false`, the message may
+already have been delivered and retrying can duplicate it. The endpoint applies
+no rate limiting of its own — pacing is the caller's responsibility — and it is
+unauthenticated, so keep the server bound to loopback and the caller on the same
+host.
 
 Tool calls are serialized to protect the shared LinkedIn browser session, both
 within one server process and across separate ones. If you run several MCP

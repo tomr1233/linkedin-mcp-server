@@ -586,6 +586,13 @@ def semantic_selector_id(selector: str) -> str:
         "main": "main",
         "[role='menu']": "profile_more_menu",
         "main li label[aria-label]": "conversation_rows",
+        '[data-testid^="ReactionFacepileCollection-"] a[href*="/feed/update/"]': (
+            "reaction_details"
+        ),
+        'dialog[open]:not(:has([contenteditable="true"])) '
+        '[data-component-type="LazyColumn"]': "reactor_list",
+        '[data-testid^="ReactionFacepileCollection-"], '
+        '[componentkey^="replaceableComment_"]': "engagement_ready",
     }
     if selector in selectors:
         return selectors[selector]
@@ -627,6 +634,10 @@ def semantic_program_id(program: str) -> str:
         ("MAX_HEADING_CONTAINERS", "root_content"),
         ("SIDEBAR_SECTIONS", "sidebar_profiles"),
         ("showAllUrls", "sidebar_profiles"),
+        ("indexOf('urn:li:activity:')", "activity_post_links"),
+        ('[componentkey^="replaceableComment_"]\';', "comment_rows"),
+        ("anonymous += 1", "reactor_rows"),
+        ("scroller.scrollTop = scroller.scrollHeight", "scroll_reactions"),
         ("hasInvite", "connection_action_signals"),
         ("expanded === 'false'", "open_more_button"),
         ("hasIncomingActionRow", "incoming_accept"),

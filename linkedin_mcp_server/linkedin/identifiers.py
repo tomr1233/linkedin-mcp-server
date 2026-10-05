@@ -48,6 +48,7 @@ from urllib.parse import quote, unquote, urlparse
 from linkedin_mcp_server.core.exceptions import InvalidReferenceError
 
 __all__ = [
+    "classify_engagement_target",
     "company_page_url",
     "job_view_url",
     "messaging_thread_url",
@@ -56,8 +57,11 @@ __all__ = [
     "normalize_opaque_id",
     "normalize_person_identifier",
     "normalize_profile_urn",
+    "normalize_post_id",
     "normalize_thread_id",
     "person_profile_url",
+    "post_update_url",
+    "share_permalink_url",
 ]
 
 # linkedin.com and every host under it. There is no canonical host to normalize
@@ -136,6 +140,11 @@ _ORGANIZATION_ROUTES = {"company"}
 # instructions. Refusing it would refuse this server's own output.
 _JOB_ROUTE = ("jobs", "view")
 _THREAD_ROUTE = ("messaging", "thread")
+# The two permalink shapes LinkedIn serves for one post. Both were observed on
+# the same activity page, pointing at the same content, so neither is canonical
+# and both are accepted.
+_POST_ROUTE = ("feed", "update")
+_SHARE_ROUTE = ("posts",)
 
 # A LinkedIn job id is the number in /jobs/view/<id>. Everything that produces
 # one here extracts ``\d+``, and anything else navigates to a 404 that costs a
@@ -468,6 +477,77 @@ def messaging_thread_url(thread_id: str, suffix: str = "") -> str:
     return (
         f"https://www.linkedin.com/messaging/thread/{quote(thread_id, safe='')}{suffix}"
     )
+
+
+def post_update_url(post_id: str, suffix: str = "") -> str:
+    """Post permalink for an already-normalized activity urn.
+
+    ``safe=":"`` where every other builder here uses ``safe=""``, and the
+    difference is deliberate. A post id is a urn (``urn:li:activity:123``), so
+    its colons are the id rather than path syntax. Percent-encoding them builds
+    ``/feed/update/urn%3Ali%3Aactivity%3A123/``; the raw form is what LinkedIn's
+    own anchors carry and what was measured to load.
+    """
+    return f"https://www.linkedin.com/feed/update/{quote(post_id, safe=':')}{suffix}"
+
+
+def share_permalink_url(slug: str, suffix: str = "") -> str:
+    """Post permalink in the ``/posts/<slug>`` shape, escaped as one segment."""
+    return f"https://www.linkedin.com/posts/{quote(slug, safe='')}{suffix}"
+
+
+def normalize_post_id(value: str) -> str:
+    """The activity urn for a post, from the urn or from a permalink to it."""
+    return normalize_opaque_id(value, field="post_url", route=_POST_ROUTE)
+
+
+def classify_engagement_target(value: str) -> tuple[str, str]:
+    """Sort a caller's URL into the two things engagement can be read from.
+
+    Returns ``("post", permalink)`` or ``("person", identifier)``. A company
+    page is neither: its posts are a page of many posts rather than one, and
+    resolving it would make the tool's page-view cost depend on which shape of
+    URL arrived. Refusing names what to pass instead.
+
+    Raises:
+        InvalidReferenceError: for anything that is not a person or a post.
+    """
+    value = value.strip()
+    if not value:
+        raise InvalidReferenceError(
+            "Missing url. Pass a post permalink or a person's /in/ profile URL."
+        )
+
+    want = "post permalink or /in/ profile URL"
+    # A bare urn carries no route to match, so it is settled before the URL
+    # branches: `urn:li:activity:123` is already the id a permalink would yield.
+    if value.lower().startswith("urn:li:"):
+        return "post", post_update_url(normalize_post_id(value), "/")
+
+    segments = _linkedin_segments(value, want=want)
+    if segments:
+        route = [segment.lower() for segment in segments[: len(_POST_ROUTE)]]
+        if route == list(_POST_ROUTE):
+            return "post", post_update_url(normalize_post_id(value), "/")
+        if segments[0].lower() == _SHARE_ROUTE[0] and len(segments) > 1:
+            slug = _identifier(segments[1])
+            if slug is None:
+                raise InvalidReferenceError(
+                    "That /posts/ link does not name a post. Pass the permalink "
+                    "exactly as LinkedIn wrote it."
+                )
+            return "post", share_permalink_url(slug)
+        if segments[0].lower() == _PERSON_ROUTE:
+            return "person", normalize_person_identifier(value)
+        raise InvalidReferenceError(
+            f"/{segments[0]}/ is not a post or a person. Pass a post permalink "
+            "(/feed/update/... or /posts/...) or a person's /in/ profile URL. A "
+            "company page is not supported."
+        )
+
+    # Not a LinkedIn address at all: treat it as a bare public identifier, which
+    # is what every other person-taking tool here accepts.
+    return "person", normalize_person_identifier(value)
 
 
 def normalize_job_id(value: str) -> str:

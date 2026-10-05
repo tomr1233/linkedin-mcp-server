@@ -989,6 +989,57 @@ async def _sidebar_scenario() -> dict[str, Any]:
     )
 
 
+async def _post_engagement_scenario() -> dict[str, Any]:
+    name = "get_post_engagement__baseline"
+    recorder = TraceRecorder(name, _COMMON_ALLOWED)
+    clock = FakeClock(recorder)
+    rows = [{"name": "Grace Hopper", "profile_path": "/in/ACoAAgrace"}]
+    page = (
+        _page(recorder)
+        .script(
+            "evaluate:comment_rows",
+            [
+                {
+                    "name": "Ada Lovelace",
+                    "profile_path": "/in/ada-lovelace",
+                    "body": "Hi",
+                }
+            ],
+        )
+        .script(
+            "evaluate:reactor_rows",
+            *([{"rows": rows, "anonymous": 1, "present": True}] * 3),
+        )
+        .script("evaluate:scroll_reactions", 1, 1)
+        .script("wait_for_selector:engagement_ready", None)
+        .script("reaction_details.count", 1)
+        .script("reaction_details.first.scroll_into_view", None)
+        .script("reaction_details.first.click", None)
+        .script("reactor_list.first.wait_for", None)
+    )
+    page.declare_locator(
+        '[data-testid^="ReactionFacepileCollection-"] a[href*="/feed/update/"]',
+        "reaction_details",
+    )
+    page.declare_derived("reaction_details", "first", "reaction_details.first")
+    page.declare_locator(
+        'dialog[open]:not(:has([contenteditable="true"])) '
+        '[data-component-type="LazyColumn"]',
+        "reactor_list",
+    )
+    page.declare_derived("reactor_list", "first", "reactor_list.first")
+    extractor = _extractor(page)
+    url = "https://www.linkedin.com/feed/update/urn:li:activity:7/"
+    async with boundaries(recorder, clock):
+        with recorder.context("get_post_engagement", "post"):
+            result = await extractor.get_post_engagement(url, max_people=10)
+    page.assert_clean()
+    return recorder.trace(
+        {"method": "get_post_engagement", "arguments": {"url": url, "max_people": 10}},
+        _complete_mapping_result(result, section_names=list(result["sections"])),
+    )
+
+
 async def _conversation_scenario(method: str) -> dict[str, Any]:
     name = f"{method}__baseline"
     recorder = TraceRecorder(name, _COMMON_ALLOWED)
@@ -1101,6 +1152,7 @@ TOOL_FACADE_METHODS = {
     "get_inbox",
     "get_job_apply_url",
     "get_my_profile",
+    "get_post_engagement",
     "get_saved_jobs",
     "get_sidebar_profiles",
     "read_company",
@@ -1189,6 +1241,7 @@ async def build_policy_traces() -> dict[str, dict[str, Any]]:
             "search_companies"
         ),
         "search-posts.json": await _single_capture_facade_scenario("search_posts"),
+        "post-engagement.json": await _post_engagement_scenario(),
         "inbox.json": await _conversation_scenario("get_inbox"),
         "conversation.json": await _conversation_scenario("get_conversation"),
         "search-conversations.json": await _conversation_scenario(

@@ -14,6 +14,7 @@ from linkedin_mcp_server.core.exceptions import (
     LinkedInOperationError,
 )
 from linkedin_mcp_server.linkedin.identifiers import (
+    classify_engagement_target,
     company_page_url,
     job_view_url,
     messaging_thread_url,
@@ -581,3 +582,60 @@ class TestIdentifierAllowlist:
     )
     def test_a_real_one_passes(self, value: str):
         assert normalize_person_identifier(value) == value
+
+
+class TestEngagementTarget:
+    """What get_post_engagement accepts, and what it refuses by name.
+
+    Both permalink shapes were observed on one activity page pointing at the
+    same post, so neither can be the only one accepted.
+    """
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "https://www.linkedin.com/feed/update/urn:li:activity:7505813874869399552/",
+            "linkedin.com/feed/update/urn:li:activity:7505813874869399552",
+            "/feed/update/urn:li:activity:7505813874869399552/",
+            "urn:li:activity:7505813874869399552",
+        ],
+    )
+    def test_a_post_permalink_resolves_to_one_post_url(self, value: str):
+        kind, url = classify_engagement_target(value)
+        assert kind == "post"
+        assert url == (
+            "https://www.linkedin.com/feed/update/urn:li:activity:7505813874869399552/"
+        )
+
+    def test_the_urn_keeps_its_colons(self):
+        """Percent-encoded colons build a path LinkedIn does not serve."""
+        _, url = classify_engagement_target("urn:li:activity:7505813874869399552")
+        assert "urn:li:activity:" in url
+        assert "%3A" not in url
+
+    def test_a_share_permalink_is_a_post(self):
+        kind, url = classify_engagement_target(
+            "https://www.linkedin.com/posts/williamhgates_ai-policy-activity-7505813874869399552-abcd"
+        )
+        assert kind == "post"
+        assert url.startswith("https://www.linkedin.com/posts/williamhgates_")
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "https://www.linkedin.com/in/williamhgates/",
+            "https://de.linkedin.com/in/williamhgates",
+            "williamhgates",
+        ],
+    )
+    def test_a_person_resolves_to_their_identifier(self, value: str):
+        assert classify_engagement_target(value) == ("person", "williamhgates")
+
+    def test_a_company_page_is_refused_by_name(self):
+        """Its posts are many posts, so accepting it hides the page-view cost."""
+        with pytest.raises(InvalidReferenceError, match="company page"):
+            classify_engagement_target("https://www.linkedin.com/company/microsoft/")
+
+    def test_an_empty_reference_is_refused(self):
+        with pytest.raises(InvalidReferenceError):
+            classify_engagement_target("   ")

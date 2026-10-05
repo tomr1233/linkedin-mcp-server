@@ -652,8 +652,15 @@ class ConversationReader:
                 "Messaging search results did not load in time."
             ) from exc
 
-    async def get_inbox(self, limit: int = 20) -> dict[str, Any]:
-        """List recent conversations from the messaging inbox."""
+    async def get_inbox(
+        self, limit: int = 20, include_thread_ids: bool = True
+    ) -> dict[str, Any]:
+        """List recent conversations from the messaging inbox.
+
+        Thread IDs can only be captured by clicking each row, and LinkedIn
+        marks a clicked row as read. ``include_thread_ids=False`` skips that
+        pass and returns the list text alone, leaving read state untouched.
+        """
         url = "https://www.linkedin.com/messaging/"
         await self._navigator._navigate_to_page(url)
         await self._session.check_rate_limit()
@@ -671,6 +678,11 @@ class ConversationReader:
         references: list[Reference] = (
             build_references(raw_result["references"], "inbox") if cleaned else []
         )
+
+        if not include_thread_ids:
+            return self._single_section_result(
+                url, "inbox", cleaned, references=references
+            )
 
         # LinkedIn's conversation sidebar uses JS click handlers instead of
         # <a> tags, so anchor extraction cannot capture thread IDs.  Click each
