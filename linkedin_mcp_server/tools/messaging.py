@@ -45,6 +45,7 @@ def register_messaging_tools(
     async def get_inbox(
         ctx: Context,
         limit: Annotated[int, Field(ge=1, le=50)] = 20,
+        include_thread_ids: bool = True,
     ) -> dict[str, Any]:
         """
         List recent conversations from the LinkedIn messaging inbox.
@@ -62,6 +63,10 @@ def register_messaging_tools(
         Args:
             ctx: FastMCP context for progress reporting
             limit: Maximum number of conversations to load (1-50, default 20)
+            include_thread_ids: Capture each conversation's thread URL as a
+                reference (default true). This clicks every listed row, and
+                LinkedIn marks a clicked conversation as read. Pass false to
+                list the inbox without changing read state.
 
         Returns:
             Dict with url, sections (inbox -> raw text), optional references, and
@@ -76,7 +81,9 @@ def register_messaging_tools(
                 progress=0, total=100, message="Loading messaging inbox"
             )
 
-            result = await extractor.get_inbox(limit=limit)
+            result = await extractor.get_inbox(
+                limit=limit, include_thread_ids=include_thread_ids
+            )
 
             await ctx.report_progress(progress=100, total=100, message="Complete")
 

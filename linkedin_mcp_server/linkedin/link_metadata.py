@@ -17,6 +17,7 @@ ReferenceKind = Literal[
     "school",
     "conversation",
     "external",
+    "post_engagement",
 ]
 
 
@@ -28,6 +29,34 @@ class Reference(TypedDict):
     text: NotRequired[str]
     context: NotRequired[str]
     value: NotRequired[str]
+
+
+class EngagementReference(Reference):
+    """One person's whole relationship to the posts that were read.
+
+    A reference with extra fields rather than a new top-level key, so the
+    documented ``{url, sections, references}`` contract still describes the
+    result. ``kind`` is always ``post_engagement`` and these never come from
+    ``classify_link``: the extractor builds them from two different surfaces
+    (the reactions dialog and the comment articles) and merges them itself.
+
+    ``identified_by`` records how the merge decided two entries were the same
+    person. Both surfaces now name people by vanity slug (``/in/name``), so
+    entries are merged on profile path and such a row says ``profile_url``.
+    Only an opaque member id (``/in/ACoAA...``), should one still turn up, is
+    bridged on the folded display name; that row says ``display_name``, and
+    is a guess two people with one name would defeat.
+
+    ``headline`` is the line under the person's name on whichever surface
+    showed one first, or ``""`` when none was read.
+    """
+
+    headline: NotRequired[str]
+    has_liked: NotRequired[bool]
+    has_commented: NotRequired[bool]
+    source_post_urls: NotRequired[list[str]]
+    comments: NotRequired[list[str]]
+    identified_by: NotRequired[Literal["profile_url", "display_name"]]
 
 
 class RawReference(TypedDict, total=False):
@@ -90,6 +119,7 @@ _SECTION_CONTEXTS = {
     "jobs": "jobs",
     "saved_jobs": "saved jobs",
     "feed": "feed",
+    "post_engagement": "post engagement",
 }
 
 _DEFAULT_REFERENCE_CAP = 12

@@ -38,7 +38,7 @@
       },
       "get_inbox": {
         "coroutine": true,
-        "signature": "(self, limit: 'int' = 20) -> 'dict[str, Any]'"
+        "signature": "(self, limit: 'int' = 20, include_thread_ids: 'bool' = True) -> 'dict[str, Any]'"
       },
       "get_job_apply_url": {
         "coroutine": true,
@@ -51,6 +51,10 @@
       "get_page_text": {
         "coroutine": true,
         "signature": "(self) -> 'str'"
+      },
+      "get_post_engagement": {
+        "coroutine": true,
+        "signature": "(self, url: 'str', *, max_posts: 'int' = 1, max_people: 'int' = 100) -> 'dict[str, Any]'"
       },
       "get_saved_jobs": {
         "coroutine": true,
@@ -106,6 +110,7 @@
       "get_inbox",
       "get_job_apply_url",
       "get_my_profile",
+      "get_post_engagement",
       "get_saved_jobs",
       "get_sidebar_profiles",
       "read_company",
@@ -321,6 +326,11 @@
         "input": {
           "additionalProperties": false,
           "properties": {
+            "include_thread_ids": {
+              "default": true,
+              "description": "Capture each conversation's thread URL as a\nreference (default true). This clicks every listed row, and\nLinkedIn marks a clicked conversation as read. Pass false to\nlist the inbox without changing read state.",
+              "type": "boolean"
+            },
             "limit": {
               "default": 20,
               "description": "Maximum number of conversations to load (1-50, default 20)",
@@ -449,6 +459,39 @@
           },
           "required": [
             "linkedin_username"
+          ],
+          "type": "object"
+        },
+        "output": {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "get_post_engagement": {
+        "input": {
+          "additionalProperties": false,
+          "properties": {
+            "max_people": {
+              "default": 100,
+              "description": "Most reactors to read per post (1-500, default 100).\nThe result says when a list stopped at this cap.",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "max_posts": {
+              "default": 1,
+              "description": "How many of a person's newest posts to read, when `url`\nnames a person (1-10, default 1). Ignored for a post URL. Each\npost costs its own page view, so raise it deliberately.",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "url": {
+              "description": "Post permalink, activity urn, or a person's /in/ profile URL",
+              "type": "string"
+            }
+          },
+          "required": [
+            "url"
           ],
           "type": "object"
         },

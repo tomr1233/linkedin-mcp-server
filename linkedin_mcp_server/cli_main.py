@@ -55,6 +55,7 @@ from linkedin_mcp_server.session_state import (
     runtime_storage_state_path,
     source_state_path,
 )
+from linkedin_mcp_server.rest_api import register_rest_routes
 from linkedin_mcp_server.server import ServerRole, create_mcp_server
 from linkedin_mcp_server.setup import run_profile_creation
 
@@ -919,6 +920,11 @@ def main(argv: Sequence[str] | None = None) -> None:
                 )
 
             if transport == "streamable-http":
+                # REST routes exist only where there is a port to serve them
+                # on. A stdio server has no REST caller, and registering them
+                # there would advertise an endpoint that can never be reached.
+                register_rest_routes(mcp)
+
                 # Validate Host and Origin. Without this a website the user
                 # merely visits can point a hostname at this server's address
                 # and have the user's own browser drive tools with the

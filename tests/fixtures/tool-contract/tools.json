@@ -310,6 +310,11 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "include_thread_ids": {
+          "default": true,
+          "description": "Capture each conversation's thread URL as a\nreference (default true). This clicks every listed row, and\nLinkedIn marks a clicked conversation as read. Pass false to\nlist the inbox without changing read state.",
+          "type": "boolean"
+        },
         "limit": {
           "default": 20,
           "description": "Maximum number of conversations to load (1-50, default 20)",
@@ -503,6 +508,55 @@
       "type": "object"
     },
     "title": "Get Person Profile"
+  },
+  {
+    "_meta": {
+      "fastmcp": {
+        "tags": [
+          "engagement",
+          "post",
+          "scraping"
+        ]
+      }
+    },
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "List the people who reacted to and commented on a post.\n\nAccepts a post permalink (/feed/update/<urn>/ or /posts/<slug>) or a\nperson's profile URL, in which case their newest `max_posts` posts are\nread. A company page is not accepted.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "max_people": {
+          "default": 100,
+          "description": "Most reactors to read per post (1-500, default 100).\nThe result says when a list stopped at this cap.",
+          "maximum": 500,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_posts": {
+          "default": 1,
+          "description": "How many of a person's newest posts to read, when `url`\nnames a person (1-10, default 1). Ignored for a post URL. Each\npost costs its own page view, so raise it deliberately.",
+          "maximum": 10,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "url": {
+          "description": "Post permalink, activity urn, or a person's /in/ profile URL",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "name": "get_post_engagement",
+    "outputSchema": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "title": "Get Post Engagement"
   },
   {
     "_meta": {

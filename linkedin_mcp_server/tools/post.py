@@ -113,3 +113,74 @@ def register_post_tools(
                 raise_tool_error(relogin_exc, "search_posts")
         except Exception as e:
             raise_tool_error(e, "search_posts")  # NoReturn
+
+    @mcp.tool(
+        timeout=tool_timeout,
+        title="Get Post Engagement",
+        annotations={"readOnlyHint": True, "openWorldHint": True},
+        tags={"post", "engagement", "scraping"},
+    )
+    async def get_post_engagement(
+        url: str,
+        ctx: Context,
+        max_posts: Annotated[int, Field(ge=1, le=10)] = 1,
+        max_people: Annotated[int, Field(ge=1, le=500)] = 100,
+    ) -> dict[str, Any]:
+        """
+        List the people who reacted to and commented on a post.
+
+        Accepts a post permalink (/feed/update/<urn>/ or /posts/<slug>) or a
+        person's profile URL, in which case their newest `max_posts` posts are
+        read. A company page is not accepted.
+
+        Args:
+            url: Post permalink, activity urn, or a person's /in/ profile URL
+            ctx: FastMCP context for progress reporting
+            max_posts: How many of a person's newest posts to read, when `url`
+                names a person (1-10, default 1). Ignored for a post URL. Each
+                post costs its own page view, so raise it deliberately.
+            max_people: Most reactors to read per post (1-500, default 100).
+                The result says when a list stopped at this cap.
+
+        Returns:
+            Dict with url, sections (post_engagement -> readable text) and
+            references (post_engagement -> one entry per person, carrying
+            headline, has_liked, has_commented, source_post_urls, comments and
+            identified_by). `headline` is "" when none was read.
+
+            One person appears once, even across several posts. Reactors and
+            commenters are merged on their profile URL, and `identified_by` is
+            "profile_url". Only an opaque /in/ACoAA... id is bridged on the
+            display name, giving "display_name": treat such a row as a claim
+            rather than a fact, since two people sharing a name would merge.
+        """
+        try:
+            extractor = await get_ready_extractor(ctx, tool_name="get_post_engagement")
+            logger.info(
+                "Reading post engagement: url='%s', max_posts=%d, max_people=%d",
+                url,
+                max_posts,
+                max_people,
+            )
+
+            await ctx.report_progress(progress=0, total=100, message="Opening post")
+
+            result = await extractor.get_post_engagement(
+                url,
+                max_posts=max_posts,
+                max_people=max_people,
+            )
+
+            await ctx.report_progress(progress=100, total=100, message="Complete")
+
+            return result
+
+        except ToolError:
+            raise
+        except AuthenticationError as e:
+            try:
+                await handle_auth_error(e, ctx)
+            except Exception as relogin_exc:
+                raise_tool_error(relogin_exc, "get_post_engagement")
+        except Exception as e:
+            raise_tool_error(e, "get_post_engagement")  # NoReturn
