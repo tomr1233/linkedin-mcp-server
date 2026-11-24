@@ -40,10 +40,13 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/patchright
 # One-shot CLI modes re-run the installer to record profile-local metadata. It
 # exits without downloading when this exact revision is present, but still needs
 # to acquire its cache lock as pwuser.
+# ExpressNext fork: `apt-get upgrade` takes Debian's security fixes released after
+# the pinned base digest (gnutls, openssl, pcre2, apt), so the GHCR scan can pass.
 RUN patchright install-deps chromium && \
     patchright install chromium --no-shell && \
     apt-get update && apt-get install -y --no-install-recommends \
         tini openbox x11vnc novnc websockify && \
+    apt-get upgrade -y --no-install-recommends && \
     chown -R pwuser:pwuser /opt/patchright && \
     chmod -R 755 /opt/patchright && \
     rm -rf /var/lib/apt/lists/*
